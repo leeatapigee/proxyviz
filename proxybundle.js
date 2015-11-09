@@ -56,7 +56,7 @@ needle.get(url, options, function(err, resp, body) {
     } else if( ze.entryName.indexOf('apiproxy/proxies') >= 0 ) {
       console.log(ze.name,'is a PROXY')
       xmlparser.parseString(zip.readAsText(ze), function(err, result) {
-        var proxy = createProxyDAG(result)
+        var proxy = deconstructProxy(result)
       })
     } else if( ze.entryName.indexOf('apiproxy/targets') >= 0 ) {
       console.log(ze.name,'is a TARGET')
@@ -86,19 +86,20 @@ function proxyEdgesToViz() {
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-function createProxyDAG(p) {
-  // add the orginating request as a node
+function deconstructProxy(p) {
+  // add the orginating request and final response as nodes
   nodes.push({id:'request', label:'Request'})
+  nodes.push({id:'target', label:'Target'})         // TODO use actual TargetEndpoints
+  nodes.push({id:'response', label:'Response'})
   var prevId = 'request'
 
-  var endOfPreFlowRequest = 'request'   // link all conditional flows to this - default to request
-  var startOfPostFlowRequest = 'target'
+  var endOfPreFlowRequest = 'request'     // link all conditional flows to this - default to request
+  var startOfPostFlowRequest = 'target'   // default termination of conditional flows
 
   console.log('Proxy name', p.ProxyEndpoint.$.name)
 
-  // PreFlow
+  // PreFlow Request ///////////////////////////////////////////////////////////
   try {
-    console.log('ProxyEndpoint', p.ProxyEndpoint)
     console.log('ProxyEndpoint.PreFlow', p.ProxyEndpoint.PreFlow)
     p.ProxyEndpoint.PreFlow.forEach(function(preflow) {
       console.log('  preflow', preflow.$.name)
@@ -119,21 +120,71 @@ function createProxyDAG(p) {
     console.log('exception', e)
   }
 
+  // PostFlow Request //////////////////////////////////////////////////////////
+  var startOfPostFlowRequest = null
+  var endOfPostFlowRequest = null
+  prevId = null
   try {
-    if( p.ProxyEndpoint.PreFlow.Response.length ) {
-      p.ProxyEndpoint.PreFlow.Response.Step.forEach(function(step) {
-        nodes.push({id:step.Name[0], label:step.Name[0], group:'PreFlowResponse'})
+    console.log('ProxyEndpoint.PostFlow', p.ProxyEndpoint.PostFlow)
+    p.ProxyEndpoint.PostFlow.forEach(function(postflow) {
+      console.log('  postflow', postflow.$.name)
+      postflow.Request.forEach(function(request) {
+        console.log('    request', postflow.$.name)
+        request.Step.forEach(function(step) {
+          console.log('      step', step)
+          if( !startOfPostFlowRequest ) {
+            startOfPostFlowRequest = step.Name[0]
+          }
+          nodes.push({id:step.Name[0], label:step.Name[0], group:'PostFlowRequest'})
+          if( prevId ) {
+            edges.push({from:prevId, to:step.Name[0]})
+          }
+          prevId = step.Name[0]
+          endOfPostFlowRequest = step.Name[0]
+        })
       })
-    }
+    })
+    edges.push({from:endOfPostFlowRequest, to:'target'})
   } catch(e) {
     console.log('exception', e)
   }
 
-  // PostFlow
+
+  // conditional flows - requests //////////////////////////////////////////////
   try {
-    if( p.ProxyEndpoint.PostFlow.Request.length ) {
-      p.ProxyEndpoint.PostFlow.Request.Step.forEach(function(step) {
-        nodes.push({id:step.Name[0], label:step.Name[0], group:'PostFlowRequest'})
+    p.ProxyEndpoint.Flows.forEach(function(flows) {
+      flows.Flow.forEach(function(flow) {
+        flow.Request.forEach(function(request) {
+          console.log('    request', flow.$.name)
+          prevId = endOfPreFlowRequest
+          var startOfFlow = null
+          var endOfFlow = null
+          request.Step.forEach(function(step) {
+            console.log('      step', step)
+            if( !startOfFlow ) {
+              startOfFlow = step.Name[0]
+              edges.push({from:endOfPreFlowRequest, to:startOfFlow})
+            }
+            nodes.push({id:step.Name[0], label:step.Name[0], group:flow.$.name+'Request'})
+            if( prevId ) {
+              edges.push({from:prevId, to:step.Name[0]})
+            }
+            prevId = step.Name[0]
+            endOfFlow = step.Name[0]
+          })
+        })
+        edges.push({from:endOfFlow, to:startOfPostFlowRequest})
+      })
+    })
+  } catch(e) {
+    console.log('exception', e)
+  }
+
+
+  try {
+    if( p.ProxyEndpoint.PreFlow.Response.length ) {
+      p.ProxyEndpoint.PreFlow.Response.Step.forEach(function(step) {
+        nodes.push({id:step.Name[0], label:step.Name[0], group:'PreFlowResponse'})
       })
     }
   } catch(e) {
