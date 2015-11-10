@@ -328,14 +328,23 @@ app.get('/', function(req, res) {
 })
 
 app.get('/proxyviz.js', function(req, res) {
-  var script = ''
-  script += 'document.addEventListener("DOMContentLoaded", function(event) {\n'
-  script += '  var nodes = new vis.DataSet('+proxyNodesToViz()+')\n'
-  script += '  var edges = new vis.DataSet('+proxyEdgesToViz()+')\n'
-  script += '  var container = document.getElementById("proxyviz")\n'
-  script += '  var data = {nodes: nodes, edges: edges}\n'
-  script += '  var network = new vis.Network(container, data, {})\n'
-  script += '})\n'
+  var script = '' +
+               'document.addEventListener("DOMContentLoaded", function(event) {\n' +
+               '  var nodes = new vis.DataSet('+proxyNodesToViz()+')\n' +
+               '  var edges = new vis.DataSet('+proxyEdgesToViz()+')\n' +
+               '  var container = document.getElementById("proxyviz")\n' +
+               '  var data = {nodes: nodes, edges: edges}\n' +
+               '  var network = new vis.Network(container, data, {})\n' +
+               '  var options = {\n' +
+               '    autoResize: true,\n' +
+               '    nodes: {shape:"box"},\n' +
+               '    interaction: {hover:true},\n' +
+               '    physics: {enabled: false},\n' +
+               '  }\n' +
+               '  network.setOptions(options)\n' +
+               '  initializeEventHandlers(network)\n' +
+               '})\n' +
+
 
   res.setHeader('Content-Type', 'text/javascript')
   res.write(script)
