@@ -20,20 +20,26 @@ var xmlparser = require('xml2js').Parser()  // converts XML files to JSON
 var express = require('express')
 var app = express()
 
-
+// GLOBALS /////////////////////////////////////////////////////////////////////
 var org = process.argv[2] || 'amer-demo15'
 var api = process.argv[3] || 'Customer360'
 var rev = process.argv[4] || '1'
-
 
 var url = 'https://api.enterprise.apigee.com/v1/organizations/'+org+'/apis/'+api+'/revisions/'+rev+'?format=bundle'
 
 var zipEntries        // stores the bundle for when needed to build the visualization
 var nodes = []        // discovered nodes from bundle
 var edges = []        // discovered edges from bundle
+var nodeCount = 0     // used to keep all step names unique across all flows
+
+// these variables hold the return steps from each flow being processed
+var preFlowRequest, preFlowResponse
+var condFlowRequest, condFlowResponse
+var postFlowRequest, postFlowResponse
+// GLOBALS /////////////////////////////////////////////////////////////////////
 
 
-////////////////////////////////////////////////////////////////////////////////
+// RETRIEVE PROXY BUNDLE ///////////////////////////////////////////////////////
 var options = {
   compressed         : true,        // sets 'Accept-Encoding' to 'gzip,deflate'
   follow_max         : 5,           // follow up to five redirects
@@ -42,7 +48,6 @@ var options = {
   password: process.env.APIGEEPW
 }
 
-////////////////////////////////////////////////////////////////////////////////
 needle.get(url, options, function(err, resp, body) {
   var zip = new AdmZip(body)
   zipEntries = zip.getEntries()
@@ -101,134 +106,150 @@ function proxyEdgesToViz() {
  * Extracts all nodes and edges from a flow
  *
  * flow - an array of steps
- * reqres - string of value Request or Response (case-sensitive)
  * groupId - string to place all these steps into the same group
- * nodeCount - used to keep all step names unique across all flows
- * priorNode - if provided, priorNode gets attached to this flow's firstStep
- * followingNode - if provided, the lastStep of this flow gets attached to followingNode
  */
-function processFlow(flow, reqres, groupId, nodeCount, priorNode, followingNode) {
+function processFlow(flow, groupId) {
   var firstStep
   var lastStep
-  var newNodes = []
-  var newEdges = []
 
   try {
     var prevId
-    flow.forEach(function(f) {
-      console.log('  flow', f.$.name, reqres)
-      f[reqres].forEach(function(r) {
-        console.log('    request', r, typeof r)
-        if( typeof r == 'object' ) {
-          r.Step.forEach(function(step) {
-            var stepId = step.Name[0]+nodeCount++
-            console.log('      step', step, stepId)
-            if( !firstStep ) {
-              firstStep = stepId
-              if( priorNode ) {
-                newEdges.push({from:priorNode, to:stepId})
-              }
-            }
-            newNodes.push({id:stepId, label:step.Name[0], group:groupId})
-            if( prevId ) {
-              newEdges.push({from:prevId, to:stepId})
-            }
-            prevId = stepId
-            lastStep = stepId
-          })
-        }
-      })
+    flow.Step.forEach(function(step) {
+      var stepId = step.Name[0]+nodeCount++
+      console.log('      step', step, stepId)
+      if( !firstStep ) {
+        firstStep = stepId
+      }
+      nodes.push({id:stepId, label:step.Name[0], group:groupId})
+      if( prevId ) {
+        edges.push({from:prevId, to:stepId})
+      }
+      prevId = stepId
+      lastStep = stepId
     })
-    if( followingNode ) {
-      newEdges.push({from:lastStep, to:followingNode})
-    }
   } catch(e) {
     console.log('exception', e)
   }
-  return {firstStep:firstStep, lastStep:lastStep, nodes:newNodes, edges:newEdges, nodeCount:nodeCount}
+  return {firstStep:firstStep, lastStep:lastStep}
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+ * Cycles through all PreFlows
+ */
+function deconstructPreFlows(p) {
+  p.ProxyEndpoint.PreFlow.forEach(function(preflow) {
+    console.log('  preflow', preflow.$.name)
+
+    // Request
+    preflow['Request'].forEach(function(r) {
+      console.log('    request', r, typeof r)
+      if( typeof r == 'object' ) {
+        preFlowRequest = processFlow(r, 'PreFlowRequest')
+      }
+      console.log('preFlowRequest', preFlowRequest)
+    })
+
+    // Response
+    preflow['Response'].forEach(function(r) {
+      console.log('    response', r, typeof r)
+      if( typeof r == 'object' ) {
+        preFlowResponse = processFlow(r, 'PreFlowResponse')
+      }
+      console.log('preFlowResponse', preFlowResponse)
+    })
+  })
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+ * Cycles through all PostFlows
+ */
+function deconstructPostFlows(p) {
+  p.ProxyEndpoint.PostFlow.forEach(function(postflow) {
+    console.log('  postflow', postflow.$.name)
+
+    // Request
+    postflow['Request'].forEach(function(r) {
+      console.log('    request', r, typeof r)
+      if( typeof r == 'object' ) {
+        postFlowRequest = processFlow(r, 'PostFlowRequest')
+      }
+      console.log('postFlowRequest', postFlowRequest)
+    })
+
+    // Response
+    postflow['Response'].forEach(function(r) {
+      console.log('    response', r, typeof r)
+      if( typeof r == 'object' ) {
+        postFlowResponse = processFlow(r, 'PostFlowResponse')
+      }
+      console.log('postFlowResponse', postFlowResponse)
+    })
+  })
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/*
+ * Cycles through all Conditional Flows
+ */
+function deconstructConditionalFlows(p) {
+  p.ProxyEndpoint.Flows.forEach(function(flows) {
+    flows.Flow.forEach(function(condflow) {
+      console.log('  condflow', condflow.$.name)
+
+      // Request
+      condflow['Request'].forEach(function(r) {
+        console.log('    request', r, typeof r)
+        if( typeof r == 'object' ) {
+          condFlowRequest = processFlow(r, condflow.$.name+'Request')
+        }
+        console.log('condFlowRequest', condFlowRequest)
+      })
+
+      // Response
+      condflow['Response'].forEach(function(r) {
+        console.log('    response', r, typeof r)
+        if( typeof r == 'object' ) {
+          condFlowResponse = processFlow(r, condflow.$.name+'Response')
+        }
+        console.log('condFlowResponse', condFlowResponse)
+      })
+    })
+  })
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 function deconstructProxy(p) {
+  console.log('Proxy name', p.ProxyEndpoint.$.name)
+
   // add the orginating request and final response as nodes
   nodes.push({id:'request', label:'Request', group:'client'})
   nodes.push({id:'target', label:'Target', group:'targets'})         // TODO use actual TargetEndpoints
   nodes.push({id:'response', label:'Response', group:'client'})
 
-  var prevId = 'request'
-  var nodeCount = 0
+  // assemble individual flows
+  deconstructPreFlows(p)
+  deconstructPostFlows(p)
+  deconstructConditionalFlows(p)
 
-  console.log('Proxy name', p.ProxyEndpoint.$.name)
+  // TODO need to allow for empty flows (no firstStep or lastStep) when connecting flows together
 
-  // PreFlow Request
-  var prereq = processFlow(p.ProxyEndpoint.PreFlow, 'Request', 'PreFlowRequest', nodeCount, 'request')
-  console.log('processFlow returned ',prereq)
-  nodeCount = prereq.nodeCount
-  nodes = nodes.concat(prereq.nodes)
-  edges = edges.concat(prereq.edges)
-
-  // PostFlow Request
-  var postreq = processFlow(p.ProxyEndpoint.PostFlow, 'Request', 'PostFlowRequest', nodeCount, null, 'target')
-  console.log('processFlow returned ',postreq)
-  nodeCount = postreq.nodeCount
-  nodes = nodes.concat(postreq.nodes)
-  edges = edges.concat(postreq.edges)
-
-  // conditional flows Request//////////////////////////////////////////////////
+  // connect flows together into a complete graph of the proxy
   try {
-    p.ProxyEndpoint.Flows.forEach(function(flows) {
-      flows.Flow.forEach(function(flow) {
-        flow.forEach(function(fl) {
-          var endOfFlow = null
+    edges.push({from:'request', to:preFlowRequest.firstStep})
 
-          // Conditional Flows Requests
-          var flowsreq = processFlow(fl, 'Request', fl.$.name+'Request', nodeCount, prereq.lastStep, postreq.firstStep)
-          console.log('processFlow returned ',flowsreq)
-          nodeCount = flowsreq.nodeCount
-          nodes = nodes.concat(flowsreq.nodes)
-          edges = edges.concat(flowsreq.edges)
-        })
-      })
-    })
+    edges.push({from:'target', to:preFlowResponse.lastStep})
+
+    edges.push({from:postFlowResponse.lastStep, to:'response'})
   } catch(e) {
     console.log('exception', e)
   }
-
-  // PreFlow Response
-  var preres = processFlow(p.ProxyEndpoint.PreFlow, 'Response', 'PreFlowResponse', nodeCount, 'target')
-  console.log('processFlow returned ',preres)
-  nodeCount = preres.nodeCount
-  nodes = nodes.concat(preres.nodes)
-  edges = edges.concat(preres.edges)
-
-  edges.push({from:'target', to:preres.lastStep})
-
-  // conditional flows /////////////////////////////////////////////////////////
-  try {
-    p.ProxyEndpoint.Flows.forEach(function(flows) {
-      flows.Flow.forEach(function(flow) {
-        var endOfFlow = null
-
-        // Conditional Flows Responses
-        var flowsres = processFlow(flow, 'Response', flow.$.name+'Response', nodeCount, preres.lastStep)
-        console.log('processFlow returned ',flowsres)
-        nodeCount = flowsres.nodeCount
-        nodes = nodes.concat(flowsres.nodes)
-        edges = edges.concat(flowsres.edges)
-      })
-    })
-  } catch(e) {
-    console.log('exception', e)
-  }
-
-  // PostFlow Response
-  var postres = processFlow(p.ProxyEndpoint.PostFlow, 'Response', 'PostFlowResponse', nodeCount)
-  console.log('processFlow returned ',postres)
-  nodeCount = postres.nodeCount
-  nodes = nodes.concat(postres.nodes)
-  edges = edges.concat(postres.edges)
-
-  edges.push({from:postres.lastStep, to:'response'})
 
   console.log('end of dag generation', nodes, edges)
 }
