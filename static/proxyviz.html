@@ -2,9 +2,19 @@
 <html>
 <head>
   <title>Proxy Visualization</title>
-
+<!-- vis
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css" rel="stylesheet" type="text/css" />
+-->
+  <script src="/jquery-1.10.2.js"></script>
+  <script src="/d3.v3.js"></script>
+  <script src="/dagre-d3.js"></script>
+  <script src="/main.js"></script>
+
+
+  <meta name="viewport" content="width=device-width">
+  <link rel="stylesheet" href="/main.css">
+
 
   <style type="text/css">
     #proxyviz {
@@ -22,9 +32,19 @@
 </p>
 
 <div id="proxyviz"></div>
+
+<p>DAG: <span id="dag-name"></span></p>
+<div id="dag">
+    <svg height="500" width='1200'>
+        <g transform="translate(20, 20)"/>
+    </svg>
+</div>
+
 <pre id="detail"/>
 
 <script type="text/javascript" src="/proxyviz.js"></script>
+
+<!--
 <script type="text/javascript">
 function initializeEventHandlers(network) {
   network.on("click", function (params) {
@@ -89,5 +109,6 @@ function initializeEventHandlers(network) {
   });
 }
 </script>
+-->
 </body>
 </html>
