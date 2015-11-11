@@ -284,6 +284,11 @@ function processProxy(p) {
   nodes.push({id:id+'RouteRule', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Routing Rules', group:'RouteRule'})
 
 
+    ////// hack to get dagre-d3 working
+    nodes.push({id:'response', label:'manually added response', group:'manual'})
+    nodes.push({id:'RouteRule', label:'manually added RouteRule', group:'manual'})
+
+
   // assemble individual flows
   var preReqIds = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Request', id+'request', null)
   var posReqIds = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Request', null, id+'RouteRule')
@@ -338,6 +343,7 @@ function processTarget(p) {
   console.log('Target name', id)
 
   nodes.push({id:id, label:'Target Endpoint'+p.TargetEndpoint.$.name, group:'targets'})
+
 
 
   // assemble individual flows
