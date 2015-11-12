@@ -1,8 +1,10 @@
 // Create a new directed graph
 var g = new dagreD3.graphlib.Graph().setGraph({});
 
-// States and transitions from RFC 793
-var states = {
+// Nodes and transitions from RFC 793
+var nodes = {
+{{{nodes}}}
+/*
   CLOSED: {
     description: "represents no connection state at all.",
     style: "fill: #f77"
@@ -67,17 +69,20 @@ var states = {
                  "sure the remote TCP received the acknowledgment of its " +
                  "connection termination request."
   }
+*/
 };
 
-// Add states to the graph, set labels, and style
-Object.keys(states).forEach(function(state) {
-  var value = states[state];
-  value.label = state;
+// Add nodes to the graph, set labels, and style
+Object.keys(nodes).forEach(function(node) {
+  var value = nodes[node];
+  value.label = node;
   value.rx = value.ry = 5;
-  g.setNode(state, value);
+  g.setNode(node, value);
 });
 
 // Set up the edges
+{{{edges}}}
+/*
 g.setEdge("CLOSED",     "LISTEN",     { label: "open" });
 g.setEdge("LISTEN",     "SYN RCVD",   { label: "rcv SYN" });
 g.setEdge("LISTEN",     "SYN SENT",   { label: "send" });
@@ -96,6 +101,7 @@ g.setEdge("FINWAIT-2",  "TIME WAIT",  { label: "rcv FIN" });
 g.setEdge("CLOSING",    "TIME WAIT",  { label: "rcv ACK of FIN" });
 g.setEdge("LAST-ACK",   "CLOSED",     { label: "rcv ACK of FIN" });
 g.setEdge("TIME WAIT",  "CLOSED",     { label: "timeout=2MSL" });
+*/
 
 // Create the renderer
 var render = new dagreD3.render();

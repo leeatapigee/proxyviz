@@ -98,7 +98,9 @@ function proxyNodesToViz() {
   var out = ''
   console.log('NODES----------------------------------------------------------')
   nodes.forEach(function(n) {
-    out += '{ id: "'+n.id+'", value: { label: "'+n.label.replace(/\"/g, "'")+'"'+(n.style?', style:"'+n.style+'"':'')+(n.shape?', shape:"'+n.shape+'"':'')+'} },\n'
+    //out += '{ id: "'+n.id+'", value: { label: "'+n.label.replace(/\"/g, "'")+'"'+(n.style?', style:"'+n.style+'"':'')+(n.shape?', shape:"'+n.shape+'"':'')+'} },\n'
+    out += '"' + n.id + '": {description: "' + n.label.replace(/\"/g, "'") + '"' + (n.style?', style:"'+n.style+'"':'') + (n.shape?', shape:"'+n.shape+'"':'') + '},\n'
+
     console.log('{ id: "%s", value: { label: "%s"} },', n.id, n.label)
   })
   return out
@@ -110,7 +112,9 @@ function proxyEdgesToViz() {
   var out = ''
   console.log('EDGES----------------------------------------------------------')
   edges.forEach(function(e) {
-    out += '{ u: "'+e.from+'", v: "'+e.to+'" },\n'
+    //out += '{ u: "'+e.from+'", v: "'+e.to+'" },\n'
+    out += 'g.setEdge("'+e.from+'", "'+e.to+'", { label: "abc" })\n'
+
     console.log('{ u: "%s", v: "%s" },', e.from, e.to)
   })
   return out
@@ -399,7 +403,7 @@ app.get('/proxyviz.js', function(req, res) {
   data.edges = proxyEdgesToViz()
 
   fs.readFile(__dirname+'/static/dagre-d3-template.hbr', 'utf-8', function(error, source) {
-    //console.log('handlebars template:', source, __dirname)
+    console.log('data', data)
     var template = handlebars.compile(source);
     script = template(data);
     res.setHeader('Content-Type', 'text/javascript')
