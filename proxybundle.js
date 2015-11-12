@@ -98,7 +98,7 @@ function proxyNodesToViz() {
   var out = ''
   console.log('NODES----------------------------------------------------------')
   nodes.forEach(function(n) {
-    out += '{ id: "'+n.id+'", value: { label: "'+n.label.replace(/\"/g, "'")+'"} },\n'
+    out += '{ id: "'+n.id+'", value: { label: "'+n.label.replace(/\"/g, "'")+'"'+(n.style?', style:"'+n.style+'"':'')+(n.shape?', shape:"'+n.shape+'"':'')+'} },\n'
     console.log('{ id: "%s", value: { label: "%s"} },', n.id, n.label)
   })
   return out
@@ -188,7 +188,7 @@ function processPrePostFlows(ep, pid, pp, rr, defaultFirst, defaultLast) {
       if( typeof r == 'object' ) {
         flowMetadata[id] = processFlow(r, id, defaultFirst, defaultLast)
       } else {
-        nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:id})
+        nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:id, style:'red'})
         flowMetadata[id].firstStep = id
         flowMetadata[id].lastStep = id
         flowMetadata[id].steps = 0
@@ -222,7 +222,7 @@ function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, post
           ids.push(id)
           console.log('    request', r, typeof r, id)
           if( typeof r == 'object' && flowMetadata[preReq].lastStep && flowMetadata[postReq].firstStep ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'+condflow.Condition[0], group:id})
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'+condflow.Condition[0], group:id, shape:'ellipse'})
             edges.push({from:flowMetadata[preReq].lastStep, to:id})
             flowMetadata[id] = processFlow(r, id, id, flowMetadata[postReq].firstStep)
           }
@@ -378,6 +378,7 @@ function processTarget(p) {
 // handle HTTP stuff ///////////////////////////////////////////////////////////
 
 app.use(express.static('static'))
+app.use('/bower_components', express.static('bower_components'))
 
 app.get('/', function(req, res) {
   res.send('try /proxyviz.html ')
@@ -390,43 +391,21 @@ app.get('/load', function(req, res) {
 })
 
 app.get('/proxyviz.js', function(req, res) {
-  var script = '' +
-               'document.addEventListener("DOMContentLoaded", function(event) {\n' +
-               '  loadData(\n' +
-               '    {\n' +
-               '       name: "proxyviz",\n' +
-               '       nodes: [\n' + proxyNodesToViz() + '\n' +
-               '              ],\n' +
-               '       links: [\n' + proxyEdgesToViz() + '\n' +
-               '              ]\n' +
-               '    }\n' +
-               '  );\n' +
+  var handlebars = require('handlebars')
+  var fs = require('fs')
+  var script
+  var data = {}
+  data.nodes = proxyNodesToViz()
+  data.edges = proxyEdgesToViz()
 
-
-/*
-               '  var nodes = new vis.DataSet('+proxyNodesToViz()+')\n' +
-               '  var edges = new vis.DataSet('+proxyEdgesToViz()+')\n' +
-               '  var container = document.getElementById("proxyviz")\n' +
-               '  var data = {nodes: nodes, edges: edges}\n' +
-               '  var options = {\n' +
-               '    autoResize: true,\n' +
-//               '    configure: true,\n' +
-               '    layout: {hierarchical: {sortMethod: "directed", direction: "LR"}},\n' +
-               '    nodes: {shape:"box"},\n' +
-               '    edges: {smooth:false},\n' +
-               '    interaction: {hover:true},\n' +
-               '    manipulation: true,\n' +
-//               '    physics: {enabled: false},\n' +
-               '  }\n' +
-               '  var network = new vis.Network(container, data, options)\n' +
-               '  initializeEventHandlers(network)\n' +
-*/
-               '})\n'
-
-
-  res.setHeader('Content-Type', 'text/javascript')
-  res.write(script)
-  res.end()
+  fs.readFile(__dirname+'/static/dagre-d3-template.hbr', 'utf-8', function(error, source) {
+    //console.log('handlebars template:', source, __dirname)
+    var template = handlebars.compile(source);
+    script = template(data);
+    res.setHeader('Content-Type', 'text/javascript')
+    res.write(script)
+    res.end()
+  })
 })
 
 var server = app.listen(3000, function() {

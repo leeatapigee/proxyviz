@@ -6,14 +6,21 @@
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
   <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css" rel="stylesheet" type="text/css" />
 -->
+  <link rel="stylesheet" href="/demo.css">
   <script src="/jquery-1.10.2.js"></script>
-  <script src="/d3.v3.js"></script>
-  <script src="/dagre-d3.js"></script>
+  <script src="/tipsy.js"></script>
+  <script src="bower_components/lodash/lodash.js"></script>
+  <script src="bower_components/graphlib/dist/graphlib.core.js"></script>
+  <script src="bower_components/dagre/dist/dagre.core.js"></script>
+  <script src="bower_components/d3/d3.min.js"></script>
+  <script src="bower_components/dagre-d3/dist/dagre-d3.core.js"></script>
+<!--
   <script src="/main.js"></script>
+-->
 
 
   <meta name="viewport" content="width=device-width">
-  <link rel="stylesheet" href="/main.css">
+  <link rel="stylesheet" href="/tipsy.css">
 
 
   <style type="text/css">
@@ -42,71 +49,6 @@
 
 <script type="text/javascript" src="/proxyviz.js"></script>
 
-<!--
-<script type="text/javascript">
-function initializeEventHandlers(network) {
-  network.on("click", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>Click event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("doubleClick", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>doubleClick event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("oncontext", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>oncontext (right click) event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("dragStart", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>dragStart event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("dragging", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>dragging event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("dragEnd", function (params) {
-      params.event = "[original event]";
-      document.getElementById('detail').innerHTML = '<h2>dragEnd event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("zoom", function (params) {
-      document.getElementById('detail').innerHTML = '<h2>zoom event:</h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("showPopup", function (params) {
-      document.getElementById('detail').innerHTML = '<h2>showPopup event: </h2>' + JSON.stringify(params, null, 4);
-  });
-  network.on("hidePopup", function () {
-      console.log('hidePopup Event');
-  });
-  network.on("select", function (params) {
-      console.log('select Event:', params);
-  });
-  network.on("selectNode", function (params) {
-      console.log('selectNode Event:', params);
-  });
-  network.on("selectEdge", function (params) {
-      console.log('selectEdge Event:', params);
-  });
-  network.on("deselectNode", function (params) {
-      console.log('deselectNode Event:', params);
-  });
-  network.on("deselectEdge", function (params) {
-      console.log('deselectEdge Event:', params);
-  });
-  network.on("hoverNode", function (params) {
-      console.log('hoverNode Event:', params);
-  });
-  network.on("hoverEdge", function (params) {
-      console.log('hoverEdge Event:', params);
-  });
-  network.on("blurNode", function (params) {
-      console.log('blurNode Event:', params);
-  });
-  network.on("blurEdge", function (params) {
-      console.log('blurEdge Event:', params);
-  });
-}
-</script>
--->
+
 </body>
 </html>
