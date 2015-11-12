@@ -262,7 +262,7 @@ function processRouteRules(p, id) {
       nodes.push({id:id+rule.$.name, label:rule.$.name, group:'RouteRule', condition:rule.Condition[0]})
 
       // TODO evaluate Condition to decide how to connect edges
-      edges.push({from:id+rule.$.name, to:'RouteRule'})
+      edges.push({from:id+rule.$.name, to:id+'RouteRule'})
       edges.push({from:id+rule.$.name, to:'T'+rule.TargetEndpoint[0]})
     } catch(e) {}
   })
@@ -282,11 +282,6 @@ function processProxy(p) {
   nodes.push({id:id+'request', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Request', group:'client'})
   nodes.push({id:id+'response', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Response', group:'client'})
   nodes.push({id:id+'RouteRule', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Routing Rules', group:'RouteRule'})
-
-
-    ////// hack to get dagre-d3 working
-    nodes.push({id:'response', label:'manually added response', group:'manual'})
-    nodes.push({id:'RouteRule', label:'manually added RouteRule', group:'manual'})
 
 
   // assemble individual flows
@@ -343,7 +338,6 @@ function processTarget(p) {
   console.log('Target name', id)
 
   nodes.push({id:id, label:'Target Endpoint'+p.TargetEndpoint.$.name, group:'targets'})
-
 
 
   // assemble individual flows
