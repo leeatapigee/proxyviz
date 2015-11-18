@@ -1,9 +1,11 @@
 # proxyviz
 A node application that retrieves a proxy bundle and turns it into a graphical representation of the flow, providing all the steps in a single view.
 
-<a href="https://gitlab.apigee.com/apigee/proxyviz/blob/55b2b9cabd2b869d115aca365650874dba7634cf/screenshots/overview.png"><img src="https://gitlab.apigee.com/apigee/proxyviz/blob/55b2b9cabd2b869d115aca365650874dba7634cf/screenshots/overview.png?raw=true"  width="250px" /></a>
+![overview](https://gitlab.apigee.com/apigee/proxyviz/blob/55b2b9cabd2b869d115aca365650874dba7634cf/screenshots/overview.png?raw=true "Overview")
 
-<a href="https://gitlab.apigee.com/apigee/proxyviz/blob/master/screenshots/zoom.png"><img src="https://gitlab.apigee.com/apigee/proxyviz/blob/master/screenshots/zoom.png?raw=true"  width="250px" /></a>
+![zoom](https://gitlab.apigee.com/apigee/proxyviz/blob/master/screenshots/zoom.png "Zoom")
+
+<img src="https://gitlab.apigee.com/apigee/Lucky/raw/master/views/l.png?raw=true"  width="250px" />
 
 ## To Run
 - Download the source
