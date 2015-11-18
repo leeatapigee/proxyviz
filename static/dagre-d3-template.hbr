@@ -62,9 +62,11 @@ var styleTooltip = function(name, description) {
 // Run the renderer. This is what draws the final graph.
 render(inner, g);
 
+
 inner.selectAll("g.node")
   .attr("title", function(v) { return styleTooltip(v, g.node(v).description) })
   .each(function(v) { $(this).tipsy({ gravity: "w", opacity: 1, html: true }); });
+
 
 // Center the graph
 var initialScale = 0.75;
