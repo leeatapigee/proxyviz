@@ -135,12 +135,6 @@ function connect(front, back, frontName, backName) {
 // using all the accumulated arrays of node ids, categorized by location in the
 // flows, connect them together as graph edges
 function createEdges() {
-  /*
-  var pEndpoints=[], clientReq = [], clientRes=[], rr=[], tEndpoints=[]
-  var preReqIdsP, posReqIdsP, preResIdsP, posResIdsP
-  var preReqIdsT, posReqIdsT, preResIdsT, posResIdsT
-  var condIdsP, condIdsT, routeRuleIds
-*/
   console.log('------------------- CREATE EDGES ----------------------')
 
   connect(clientReq, pEndpoints, 'clientReq', 'ProxyEndpoints')
@@ -220,7 +214,8 @@ function proxyEdgesToViz() {
  * defaultFirst - id of first node, if none is discovered
  * defaultLast - id of last node, if none is discovered
  */
-function processFlow(flow, id/*, defaultFirst, defaultLast*/) {
+function processFlow(flow, id) {
+  console.log('processFlow', id)
   var firstStep
   var lastStep
   var stepCount = 0
@@ -261,7 +256,7 @@ function processFlow(flow, id/*, defaultFirst, defaultLast*/) {
  * defaultFirst - id of first node, if none is discovered
  * defaultLast - id of last node, if none is discovered
  */
-function processPrePostFlows(ep, pid, pp, rr/*, defaultFirst, defaultLast*/) {
+function processPrePostFlows(ep, pid, pp, rr) {
   var ids = []
   var flows = eval('ep.'+pp+'Flow')
   flows.forEach(function(flow) {
@@ -272,7 +267,7 @@ function processPrePostFlows(ep, pid, pp, rr/*, defaultFirst, defaultLast*/) {
     flow[rr].forEach(function(r) {
       console.log('ReqRes:', rr, r, typeof r)
       if( typeof r == 'object' ) {
-        flowMetadata[id] = processFlow(r, id/*, defaultFirst, defaultLast*/)
+        flowMetadata[id] = processFlow(r, id)
         ids.push(id)
       } else {
         nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
@@ -280,10 +275,7 @@ function processPrePostFlows(ep, pid, pp, rr/*, defaultFirst, defaultLast*/) {
         flowMetadata[id].firstStep = id
         flowMetadata[id].lastStep = id
         flowMetadata[id].steps = 0
-//        if( defaultFirst && defaultLast ) {
-//          edges.push({from:defaultFirst, to:defaultLast})
         console.log('flowMetadata:', id, flowMetadata[id])
-//        }
       }
     })
   })
@@ -306,7 +298,7 @@ function processPrePostFlows(ep, pid, pp, rr/*, defaultFirst, defaultLast*/) {
 /*
  * Cycles through all Conditional Flows
  */
-function processConditionalFlows(p, pid, rr/*, defaultFirst, defaultLast, preReq, postReq, preRes, postRes*/) {
+function processConditionalFlows(p, pid, rr) {
   var ids = []
   p.Flows.forEach(function(flows) {
     if( typeof flows == 'object' ) {
@@ -317,28 +309,15 @@ function processConditionalFlows(p, pid, rr/*, defaultFirst, defaultLast, preReq
         condflow[rr].forEach(function(r) {
           var id = pid+condflow.$.name+rr
           console.log('    ', rr, r, typeof r, id)
-          if( typeof r == 'object' /*&& flowMetadata[preReq].lastStep && flowMetadata[postReq].firstStep*/ ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'/*+condflow.Condition[0]*/, group:id, style: 'fill: green'/*, shape:'ellipse'*/})
+          if( typeof r == 'object' ) {
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' '+rr, condition:condflow.Condition[0], group:id, style: 'fill: green'/*, shape:'ellipse'*/})
             ids.push(id)
-            //edges.push({from:flowMetadata[preReq].lastStep, to:id, label:condflow.Condition[0]})
-            flowMetadata[id] = processFlow(r, id/*, id, flowMetadata[postReq].firstStep*/)
-          }
-          console.log(id, flowMetadata[id])
-        })
-/*
-        // Response
-        condflow['Response'].forEach(function(r) {
-          var id = pid+condflow.$.name+'Response'
-          console.log('    response', r, typeof r, id)
-          if( typeof r == 'object' && flowMetadata[preRes] && flowMetadata[postRes].firstStep ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Response'/*+condflow.Condition[0]* /, group:id, style: 'fill: yellow'})
-            ids.push(id)
-            //edges.push({from:flowMetadata[preRes].lastStep, to:id, label:condflow.Condition[0]})
             flowMetadata[id] = processFlow(r, id)
+            edges.push({from:id, to:flowMetadata[id].firstStep, label:condflow.Condition[0]})
+            flowMetadata[id].firstStep = id
           }
           console.log(id, flowMetadata[id])
         })
-      */
       })
     }
   })
@@ -347,7 +326,7 @@ function processConditionalFlows(p, pid, rr/*, defaultFirst, defaultLast, preReq
 
 ////////////////////////////////////////////////////////////////////////////////
 /*
- * Cycles through all Conditional Flows
+ * Cycles through all Route Rules
  */
 function processRouteRules(p, id) {
   var ids = []
@@ -358,10 +337,7 @@ function processRouteRules(p, id) {
     try {
       ids.push(id+rule.$.name)
       nodes.push({id:id+rule.$.name, label:rule.$.name, group:'RouteRule', style: 'fill: cyan', condition:rule.Condition[0]})
-
       // TODO evaluate Condition to decide how to connect edges
-      //edges.push({from:id+rule.$.name, to:id+'RouteRule'})
-      //edges.push({from:id+rule.$.name, to:'T'+rule.TargetEndpoint[0]})
     } catch(e) {}
   })
   return ids
@@ -383,59 +359,25 @@ function processProxy(p) {
   nodes.push({id:id+'request', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Request', group:'client', style: 'fill: magenta'})
   clientRes.push(id+'response')
   nodes.push({id:id+'response', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Response', group:'client', style: 'fill: magenta'})
-  rr.push(id+'RouteRule')
-  nodes.push({id:id+'RouteRule', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Routing Rules', group:'RouteRule', style: 'fill: #A00'})
+//  rr.push(id+'RouteRule')
+//  nodes.push({id:id+'RouteRule', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Routing Rules', group:'RouteRule', style: 'fill: #A00'})
 
 
   // assemble individual flows
-  preReqIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Request', id+'request', null)
-  posReqIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Request', null, id+'RouteRule')
-  preResIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Response')   // TODO comes from TargetEndpoint
-  posResIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Response', null, id+'response')
+  preReqIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Request')
+  posReqIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Request')
+  preResIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Response')
+  posResIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Response')
 
   // TODO not sure I trust those four parameters to work in all cases
-  condReqIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Request'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
-  condResIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Response'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
+  condReqIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Request')
+  condResIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Response')
   routeRuleIds = processRouteRules(p.ProxyEndpoint, id)
 
   console.log('proxy ids', preReqIdsP, posReqIdsP, preResIdsP, posResIdsP)
   console.log('conditional P request ids', condReqIdsP)
   console.log('conditional P response ids', condResIdsP)
   console.log('routerule ids', routeRuleIds)
-
-  // connect flows together into a complete graph of the proxy /////////////////
-
-  // connect each conditional flow between preflow and postflow
-  /*
-  condIdsP.forEach(function(cid) {
-    try {
-      console.log('connect conditionals A', cid, flowMetadata[preReqIdsP[0]], flowMetadata[cid])
-      edges.push({from:flowMetadata[preReqIdsP[0]].lastStep, to:flowMetadata[cid].firstStep})
-    } catch(e) {}
-    try {
-      console.log('connect conditionals B', flowMetadata[cid], flowMetadata[posReqIdsP[0]])
-      edges.push({from:flowMetadata[cid].lastStep, to:flowMetadata[posReqIdsP[0]].firstStep})
-    } catch(e) {}
-  })
-  */
-
-  /*
-  try {
-    // conditional flows request
-    Object.keys(flowMetadata).forEach(function(key) {
-      console.log('key', key)
-      if( [id+'PreFlowRequest', id+'PostFlowRequest', id+'PreFlowResponse', id+'PostFlowResponse'].indexOf(key) === -1 ) {
-        console.log('>>>>>>>>>>>>>>>>>>>>>>> process', flowMetadata[key])
-        edges.push({from:flowMetadata[id+'PreFlowRequest'].lastStep, to:flowMetadata[key].firstStep})
-        edges.push({from:flowMetadata[key].lastStep, to:flowMetadata[id+'PostFlowRequest'].firstStep})
-      }
-    })
-  } catch(e) {
-    console.log('exception', e)
-  }
-  */
-
-//  console.log('end of dag generation', nodes, edges)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -450,36 +392,17 @@ function processTarget(p) {
 
 
   // assemble individual flows
-  preReqIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Request', id, null)
-  posReqIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Request', null, id)
-  preResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Response', id, null)
-  posResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Response', null, id/*+'response'*/)
+  preReqIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Request')
+  posReqIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Request')
+  preResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Response')
+  posResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Response')
 
-  condReqIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Request'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
-  condResIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Response'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
+  condReqIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Request')
+  condResIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Response')
 
   console.log('target ids', preReqIdsT, posReqIdsT, preResIdsT, posResIdsT)
   console.log('conditional T request ids', condReqIdsT)
   console.log('conditional T response ids', condResIdsT)
-
-  // connect flows together into a complete graph of the proxy
-  /*
-  try {
-    // conditional flows request
-    Object.keys(flowMetadata).forEach(function(key) {
-      console.log('key', key)
-      if( [id+'PreFlowRequest', id+'PostFlowRequest', id+'PreFlowResponse', id+'PostFlowResponse'].indexOf(key) === -1 ) {
-        console.log('>>>>>>>>>>>>>>>>>>>>>>> process', flowMetadata[key])
-        edges.push({from:flowMetadata[id+'PreFlowRequest'].lastStep, to:flowMetadata[key].firstStep})
-        edges.push({from:flowMetadata[key].lastStep, to:flowMetadata[id+'PostFlowRequest'].firstStep})
-      }
-    })
-  } catch(e) {
-    console.log('exception', e)
-  }
-  */
-
-//  console.log('end of dag generation', nodes, edges)
 }
 
 
