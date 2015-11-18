@@ -5,6 +5,8 @@ A node application that retrieves a proxy bundle and turns it into a graphical r
 
 ![zoom](https://gitlab.apigee.com/apigee/proxyviz/blob/master/screenshots/zoom.png)
 
+<img src="https://gitlab.apigee.com/apigee/Lucky/raw/master/views/l.png?raw=true"  width="250px" />
+
 ## To Run
 - Download the source
 - Set your Apigee credentials in environment variables
