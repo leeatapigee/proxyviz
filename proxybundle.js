@@ -89,6 +89,9 @@ loadBundle = function() {
 
       console.log('\n===============================\n')
     })
+
+    // connect the nodes together
+
   })
 }()
 
@@ -113,7 +116,8 @@ function proxyEdgesToViz() {
   console.log('EDGES----------------------------------------------------------')
   edges.forEach(function(e) {
     //out += '{ u: "'+e.from+'", v: "'+e.to+'" },\n'
-    out += 'g.setEdge("'+e.from+'", "'+e.to+'", { label: "abc" })\n'
+    out += 'g.setEdge("'+e.from+'", "'+e.to+'", { label: "'+(e.label ? e.label.replace(/\"/g, "'") : '')+'" })\n'
+//    out += 'console.log("'+e+'");g.setEdge("'+e.from+'", "'+e.to+'");\n'
 
     console.log('{ u: "%s", v: "%s" },', e.from, e.to)
   })
@@ -124,14 +128,15 @@ function proxyEdgesToViz() {
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 /*
- * Extracts all nodes and edges from a flow
+ * Extracts all nodes and edges from a flow - generic, reusable, called by
+ * processPrePostFlows and processConditionalFlows
  *
  * flow - an array of steps
  * id - string to place all these steps into the same group
  * defaultFirst - id of first node, if none is discovered
  * defaultLast - id of last node, if none is discovered
  */
-function processFlow(flow, id, defaultFirst, defaultLast) {
+function processFlow(flow, id/*, defaultFirst, defaultLast*/) {
   var firstStep
   var lastStep
   var stepCount = 0
@@ -143,9 +148,11 @@ function processFlow(flow, id, defaultFirst, defaultLast) {
       ++stepCount
       console.log('      step', step, stepId, stepCount)
       if( !firstStep ) {
+        /*
         if( defaultFirst ) {
           edges.push({from:defaultFirst, to:stepId})
         }
+        */
         firstStep = stepId
       }
       nodes.push({id:stepId, label:step.Name[0], group:id})
@@ -155,11 +162,13 @@ function processFlow(flow, id, defaultFirst, defaultLast) {
       prevId = stepId
       lastStep = stepId
     })
+    /*
     if( lastStep && defaultLast ) {
       edges.push({from:lastStep, to:defaultLast})     // if flow contains steps
     } else if( defaultFirst && defaultLast ) {
       edges.push({from:defaultFirst, to:defaultLast}) // if flow is empty
     }
+    */
   } catch(e) {
     console.log('exception', e)
   }
@@ -190,9 +199,9 @@ function processPrePostFlows(ep, pid, pp, rr, defaultFirst, defaultLast) {
     flow[rr].forEach(function(r) {
       console.log('ReqRes:', rr, r, typeof r)
       if( typeof r == 'object' ) {
-        flowMetadata[id] = processFlow(r, id, defaultFirst, defaultLast)
+        flowMetadata[id] = processFlow(r, id/*, defaultFirst, defaultLast*/)
       } else {
-        nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:id, style:'red'})
+        nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:id, style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
         flowMetadata[id].firstStep = id
         flowMetadata[id].lastStep = id
         flowMetadata[id].steps = 0
@@ -226,9 +235,9 @@ function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, post
           ids.push(id)
           console.log('    request', r, typeof r, id)
           if( typeof r == 'object' && flowMetadata[preReq].lastStep && flowMetadata[postReq].firstStep ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'+condflow.Condition[0], group:id, shape:'ellipse'})
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'/*+condflow.Condition[0]*/, group:id, style: 'fill: green'/*, shape:'ellipse'*/})
             edges.push({from:flowMetadata[preReq].lastStep, to:id})
-            flowMetadata[id] = processFlow(r, id, id, flowMetadata[postReq].firstStep)
+            flowMetadata[id] = processFlow(r, id/*, id, flowMetadata[postReq].firstStep*/)
           }
           console.log(id, flowMetadata[id])
         })
@@ -239,9 +248,9 @@ function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, post
           ids.push(id)
           console.log('    response', r, typeof r, id)
           if( typeof r == 'object' && flowMetadata[preRes] && flowMetadata[postRes].firstStep ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Response'+condflow.Condition[0], group:id})
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Response'/*+condflow.Condition[0]*/, group:id, style: 'fill: yellow'})
             edges.push({from:flowMetadata[preRes].lastStep, to:id})
-            flowMetadata[id] = processFlow(r, id, id, flowMetadata[postRes].firstStep)
+            flowMetadata[id] = processFlow(r, id/*, id, flowMetadata[postRes].firstStep*/)
           }
           console.log(id, flowMetadata[id])
         })
@@ -263,7 +272,7 @@ function processRouteRules(p, id) {
     // NOTE: assumed [0] on Condition and TargetEndpoint -- possible issue down the road?
     try {
       ids.push(id+rule.$.name)
-      nodes.push({id:id+rule.$.name, label:rule.$.name, group:'RouteRule', condition:rule.Condition[0]})
+      nodes.push({id:id+rule.$.name, label:rule.$.name, group:'RouteRule', style: 'fill: cyan', condition:rule.Condition[0]})
 
       // TODO evaluate Condition to decide how to connect edges
       edges.push({from:id+rule.$.name, to:id+'RouteRule'})
@@ -276,22 +285,23 @@ function processRouteRules(p, id) {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+// this is the entry point for processing a ProxyEndpoint
 function processProxy(p) {
   var id = 'P'+p.ProxyEndpoint.$.name   // ProxyEndpoint identifier
   console.log('Proxy name', id)
 
-  // TODO handle multiple ProxyEndpoints
+  nodes.push({id:id, label:'Proxy Endpoint'+p.ProxyEndpoint.$.name, group:'Proxy', style: 'fill: #00C'})
 
   // add the static nodes
-  nodes.push({id:id+'request', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Request', group:'client'})
-  nodes.push({id:id+'response', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Response', group:'client'})
-  nodes.push({id:id+'RouteRule', label:'Proxy Endpoint'+p.ProxyEndpoint.$.name+'Routing Rules', group:'RouteRule'})
+  nodes.push({id:id+'request', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Request', group:'client', style: 'fill: magenta'})
+  nodes.push({id:id+'response', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Response', group:'client', style: 'fill: magenta'})
+  nodes.push({id:id+'RouteRule', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Routing Rules', group:'RouteRule', style: 'fill: #A00'})
 
 
   // assemble individual flows
   var preReqIds = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Request', id+'request', null)
   var posReqIds = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Request', null, id+'RouteRule')
-  var preResIds = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Response')
+  var preResIds = processPrePostFlows(p.ProxyEndpoint, id, 'Pre', 'Response')   // TODO comes from TargetEndpoint
   var posResIds = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Response', null, id+'response')
 
   // TODO not sure I trust those four parameters to work in all cases
@@ -337,18 +347,19 @@ function processProxy(p) {
 
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
+// this is the entry point for processing a TargetEndpoint
 function processTarget(p) {
   var id = 'T'+p.TargetEndpoint.$.name   // TargetEndpoint identifier
   console.log('Target name', id)
 
-  nodes.push({id:id, label:'Target Endpoint'+p.TargetEndpoint.$.name, group:'targets'})
+  nodes.push({id:id, label:'Target Endpoint'+p.TargetEndpoint.$.name, group:'Target', style: 'fill: #0C0'})
 
 
   // assemble individual flows
   var preReqIds = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Request', id, null)
   var posReqIds = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Request', null, id)
   var preResIds = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Response', id, null)
-  var posResIds = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Response', null, 'response')
+  var posResIds = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Response', null, id/*+'response'*/)
 
   // TODO not sure I trust those four parameters to work in all cases
   var condIds = processConditionalFlows(p.TargetEndpoint, id, preReqIds[0], posReqIds[0], preResIds[0], posResIds[0])
@@ -403,7 +414,7 @@ app.get('/proxyviz.js', function(req, res) {
   data.edges = proxyEdgesToViz()
 
   fs.readFile(__dirname+'/static/dagre-d3-template.hbr', 'utf-8', function(error, source) {
-    console.log('data', data)
+    console.log('data', data, '\n\n')
     var template = handlebars.compile(source);
     script = template(data);
     res.setHeader('Content-Type', 'text/javascript')
