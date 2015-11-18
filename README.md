@@ -2,11 +2,9 @@
 A node application that retrieves a proxy bundle and turns it into a graphical representation of the flow, providing all the steps in a single view.
 
 
-![overview](https://gitlab.apigee.com/apigee/proxyviz/blob/55b2b9cabd2b869d115aca365650874dba7634cf/screenshots/overview.png?raw=true "Overview")
+![overview](screenshots/overview.png?raw=true "Overview")
 
-![zoom](https://gitlab.apigee.com/apigee/proxyviz/blob/master/screenshots/zoom.png "Zoom")
-
-**Can someone please tell me why these images will not show up?**
+![zoom](screenshots/zoom.png "Zoom")
 
 ## To Run
 - Download the source
