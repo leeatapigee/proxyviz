@@ -145,36 +145,48 @@ function createEdges() {
 
   connect(clientReq, pEndpoints, 'clientReq', 'ProxyEndpoints')
   connect(pEndpoints, preReqIdsP, 'ProxyEndpoints', 'P PreFlows Req')
+
   if( condReqIdsP.length ) {
     connect(preReqIdsP, condReqIdsP, 'P PreFlows Req', 'P Conditionals Req')
     connect(condReqIdsP, posReqIdsP, 'P Conditionals Req', 'P PostFlows Req')
   } else {
     connect(preReqIdsP, posReqIdsP, 'P PreFlows Req', 'P PostFlows Req')
   }
-  connect(posReqIdsP, routeRuleIds, 'P PostFlows Req', 'RouteRules')
-  connect(routeRuleIds, preReqIdsT, 'RouteRules', 'T PreFlows Req')
+
+  if( routeRuleIds.length ) {
+    connect(posReqIdsP, routeRuleIds, 'P PostFlows Req', 'RouteRules')
+    connect(routeRuleIds, preReqIdsT, 'RouteRules', 'T PreFlows Req')
+  } else {
+    connect(posReqIdsP, preReqIdsT, 'P PostFlows Req', 'T PreFlows Req')
+  }
+
   if( condReqIdsT.length ) {
     connect(preReqIdsT, condReqIdsT, 'T PreFlows Req', 'T Conditionals Req')
     connect(condReqIdsT, posReqIdsT, 'T Conditionals Req', 'T PostFlows Req')
   } else {
     connect(preReqIdsT, posReqIdsT, 'T PreFlows Req', 'T PostFlows Req')
   }
+
   connect(posReqIdsT, tEndpoints, 'T PostFlows Req', 'TargetEndpoints')
 
   connect(tEndpoints, preResIdsT, 'TargetEndpoints', 'T PreFlows Res')
+
   if( condResIdsT.length ) {
     connect(preResIdsT, condResIdsT, 'T PreFlows Res', 'T Conditionals Res')
     connect(condResIdsT, posResIdsT, 'T Conditionals Res', 'T PostFlows Res')
   } else {
     connect(preResIdsT, posResIdsT, 'T PreFlows Res', 'T PostFlows Res')
   }
+
   connect(posResIdsT, preResIdsP, 'T PostFlows Res', 'P PreFlows Res')
+
   if( condResIdsP.length ) {
     connect(preResIdsP, condResIdsP, 'P PreFlows Res', 'P Conditionals Res')
     connect(condResIdsP, posResIdsP, 'P Conditionals Res', 'P PostFlows Res')
   } else {
     connect(preResIdsP, posResIdsP, 'P PreFlows Res', 'P PostFlows Res')
   }
+
   connect(posResIdsP, clientRes, 'P PostFlows Res', 'clientRes')
 
   console.log('------------------- CREATE EDGES ----------------------')
@@ -318,7 +330,7 @@ function processConditionalFlows(p, pid, rr) {
             ids.push(id)
             flowMetadata[id] = processFlow(r, id)
             // connect Conditional "header" node to front of conditional flow
-            edges.push({from:id, to:flowMetadata[id].firstStep, label:condflow.Condition[0]})
+            edges.push({from:id, to:flowMetadata[id].firstStep/*, label:condflow.Condition[0]*/})
             flowMetadata[id].firstStep = id
           }
           console.log(id, flowMetadata[id])
@@ -357,15 +369,13 @@ function processProxy(p) {
   console.log('Proxy name', id)
 
   pEndpoints.push(id)
-  nodes.push({id:id, label:'Proxy Endpoint '+p.ProxyEndpoint.$.name, group:'Proxy', style: 'fill: #00C'})
+  nodes.push({id:id, label:'Proxy Endpoint '+p.ProxyEndpoint.$.name, group:'Proxy', style: 'fill: #88D'})
 
   // add the static nodes
   clientReq.push(id+'request')
   nodes.push({id:id+'request', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Request', group:'client', style: 'fill: magenta'})
   clientRes.push(id+'response')
   nodes.push({id:id+'response', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Response', group:'client', style: 'fill: magenta'})
-//  rr.push(id+'RouteRule')
-//  nodes.push({id:id+'RouteRule', label:'Proxy Endpoint '+p.ProxyEndpoint.$.name+' Routing Rules', group:'RouteRule', style: 'fill: #A00'})
 
 
   // assemble individual flows
@@ -393,7 +403,7 @@ function processTarget(p) {
   console.log('Target name', id)
 
   tEndpoints.push(id)
-  nodes.push({id:id, label:'Target Endpoint '+p.TargetEndpoint.$.name, group:'Target', style: 'fill: #0C0'})
+  nodes.push({id:id, label:'Target Endpoint '+p.TargetEndpoint.$.name, group:'Target', style: 'fill: #0D0'})
 
 
   // assemble individual flows
