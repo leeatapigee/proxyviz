@@ -257,6 +257,7 @@ function processFlow(flow, id) {
  * defaultLast - id of last node, if none is discovered
  */
 function processPrePostFlows(ep, pid, pp, rr) {
+  var pt = pid[0] === 'P' ? 'Proxy ' : 'Target '
   var ids = []
   var flows = eval('ep.'+pp+'Flow')
   flows.forEach(function(flow) {
@@ -266,12 +267,14 @@ function processPrePostFlows(ep, pid, pp, rr) {
 
     flow[rr].forEach(function(r) {
       console.log('ReqRes:', rr, r, typeof r)
+      nodes.push({id:id, label:pt+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
+      ids.push(id)
       if( typeof r == 'object' ) {
         flowMetadata[id] = processFlow(r, id)
-        ids.push(id)
+        // connect "header" node to front of flow
+        edges.push({from:id, to:flowMetadata[id].firstStep, label:''})
+        flowMetadata[id].firstStep = id
       } else {
-        nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
-        ids.push(id)
         flowMetadata[id].firstStep = id
         flowMetadata[id].lastStep = id
         flowMetadata[id].steps = 0
@@ -279,7 +282,7 @@ function processPrePostFlows(ep, pid, pp, rr) {
       }
     })
   })
-
+/*
   if( !ids.length ) {
     console.log('create empty placeholder', pid, pp, rr)
     var id = 'Empty' + pid + pp + 'Flow' + rr
@@ -287,7 +290,7 @@ function processPrePostFlows(ep, pid, pp, rr) {
     ids.push(id)
     flowMetadata[id] = {firstStep:id, lastStep:id, steps:0}
   }
-
+*/
   return ids
 }
 
@@ -313,6 +316,7 @@ function processConditionalFlows(p, pid, rr) {
             nodes.push({id:id, label:'Conditional '+condflow.$.name+' '+rr, condition:condflow.Condition[0], group:id, style: 'fill: green'/*, shape:'ellipse'*/})
             ids.push(id)
             flowMetadata[id] = processFlow(r, id)
+            // connect Conditional "header" node to front of conditional flow
             edges.push({from:id, to:flowMetadata[id].firstStep, label:condflow.Condition[0]})
             flowMetadata[id].firstStep = id
           }
