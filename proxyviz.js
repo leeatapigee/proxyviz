@@ -30,10 +30,8 @@ var _ = require('lodash')
 
 // GLOBALS /////////////////////////////////////////////////////////////////////
 var org = process.argv[2] || 'amer-demo15'
-var api = process.argv[3] || 'Customer360'
+var prx = process.argv[3] || 'Customer360'
 var rev = process.argv[4] || '1'
-
-var url = 'https://api.enterprise.apigee.com/v1/organizations/'+org+'/apis/'+api+'/revisions/'+rev+'?format=bundle'
 
 var zipEntries        // stores the bundle for when needed to build the visualization
 var nodes = []        // discovered nodes from bundle
@@ -50,7 +48,7 @@ var condReqIdsP, condReqIdsT, condResIdsP, condResIdsT, routeRuleIds
 
 
 // RETRIEVE PROXY BUNDLE ///////////////////////////////////////////////////////
-loadBundle = function() {
+var loadBundle = function(org, prx, rev) {
   var options = {
     compressed         : true,        // sets 'Accept-Encoding' to 'gzip,deflate'
     follow_max         : 5,           // follow up to five redirects
@@ -58,6 +56,9 @@ loadBundle = function() {
     username: process.env.APIGEEUN,
     password: process.env.APIGEEPW
   }
+
+  var url = 'https://api.enterprise.apigee.com/v1/organizations/'+org+'/apis/'+prx+'/revisions/'+rev+'?format=bundle'
+  console.log('retrieving bundle', url)
 
   needle.get(url, options, function(err, resp, body) {
     var zip = new AdmZip(body)
@@ -100,7 +101,7 @@ loadBundle = function() {
     createEdges()
 
   })
-}()
+}
 
 
 
@@ -297,15 +298,6 @@ function processPrePostFlows(ep, pid, pp, rr) {
       })
     }
   })
-/*
-  if( !ids.length ) {
-    console.log('create empty placeholder', pid, pp, rr)
-    var id = 'Empty' + pid + pp + 'Flow' + rr
-    nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
-    ids.push(id)
-    flowMetadata[id] = {firstStep:id, lastStep:id, steps:0}
-  }
-*/
   return ids
 }
 
@@ -439,9 +431,15 @@ app.get('/', function(req, res) {
 })
 
 app.get('/load', function(req, res) {
-  // TODO this is not working
-  loadBundle()
-  res.redirect('/proxyviz.html')
+  // TODO redirect does not work, probably because it redirects before the bundle has been downloaded and processed
+  res.write('<html><body><p>processing bundle...</p>')
+  org = req.query.org
+  proxy = req.query.prx
+  rev = req.query.rev
+  loadBundle(req.query.org, req.query.prx, req.query.rev)
+  res.write('<p>browse to <a href="/proxyviz.html">/proxyviz.html</a> to view</p>')
+  res.write('</body></html>')
+  res.end()
 })
 
 app.get('/proxygraph.js', function(req, res) {
@@ -449,6 +447,9 @@ app.get('/proxygraph.js', function(req, res) {
   var fs = require('fs')
   var script
   var data = {}
+  data.org = org
+  data.proxy = proxy
+  data.rev = rev
   data.nodes = proxyNodesToViz()
   data.edges = proxyEdgesToViz()
 

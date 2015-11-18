@@ -2,10 +2,6 @@
 <html>
 <head>
   <title>Proxy Visualization</title>
-<!-- vis
-  <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.js"></script>
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/vis/4.9.0/vis.min.css" rel="stylesheet" type="text/css" />
--->
   <link rel="stylesheet" href="/demo.css">
   <script src="/jquery-1.10.2.js"></script>
   <script src="/tipsy.js"></script>
@@ -15,11 +11,8 @@
   <script src="bower_components/d3/d3.min.js"></script>
   <script src="bower_components/dagre-d3/dist/dagre-d3.core.js"></script>
 <!--
-  <script src="/main.js"></script>
--->
-
-
   <meta name="viewport" content="width=device-width">
+-->
   <link rel="stylesheet" href="/tipsy.css">
 
 
@@ -38,7 +31,7 @@
 
 <div id="proxyviz"></div>
 
-<p>DAG: <span id="dag-name"></span></p>
+<p id="proxyId"><span id="proxyName"></span></p>
 <div id="dag">
     <svg id="svg" width="90%">
         <g/>

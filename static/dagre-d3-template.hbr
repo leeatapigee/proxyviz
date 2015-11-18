@@ -2,6 +2,10 @@
 var g = new dagreD3.graphlib.Graph().setGraph({});
 console.log('g=', JSON.stringify(g))
 
+var title = document.getElementById('proxyName')
+console.log('title', title)
+title.innerHTML = '{{org}} {{proxy}} {{rev}}'
+
 // Nodes and transitions from RFC 793
 var nodes = {
 {{{nodes}}}
@@ -36,7 +40,7 @@ var svg = d3.select("svg"),
 var zoom = d3.behavior.zoom().on("zoom", function() {
     console.log('d3.event (zoom)=', JSON.stringify(d3.event))
     if( !d3.event.translate[0] ) d3.event.translate[0]=100
-    inner.attr("transform", "translate(" + d3.event.translate + ") " +
+    inner.attr("transform", "translate(" + d3.event.translate + ")" +
                                 "scale(" + d3.event.scale + ")");
   });
 svg.call(zoom);

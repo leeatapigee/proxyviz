@@ -12,9 +12,11 @@ A node application that retrieves a proxy bundle and turns it into a graphical r
   - Username in APIGEEUN
   - Password in APIGEEPW
     - For example, `export APIGEEUN=myusername`
-- Run the Node application, indicating the org, proxy, and revisions
-  - `node proxyviz.js everydaybank payment 1`
-- Browse to http://localhost:3000/proxyviz.html
+- Run the Node application
+  - `node proxyviz.js`
+- Load the bundle and prepare the visualization by browsing to http://localhost:3000/load?org=myorg&prx=myproxy&rev=1
+  - Specify your org, proxy, and revision in the query parameters.
+- Browse to http://localhost:3000/proxyviz.html to view the proxy structure.
 - Zoom with the mouse wheel, pan by dragging.  I still need to fix a problem that prevents dragging along the X axis.
 
 ## To Do
