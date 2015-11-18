@@ -35,7 +35,7 @@ var svg = d3.select("svg"),
 // Set up zoom support
 var zoom = d3.behavior.zoom().on("zoom", function() {
     console.log('d3.event (zoom)=', JSON.stringify(d3.event))
-    if( !d3.event.translate[0] ) d3.event.translate[0]=0
+    if( !d3.event.translate[0] ) d3.event.translate[0]=100
     inner.attr("transform", "translate(" + d3.event.translate + ") " +
                                 "scale(" + d3.event.scale + ")");
   });

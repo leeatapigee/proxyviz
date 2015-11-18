@@ -45,7 +45,7 @@ var flowMetadata = {} // holds the return steps from each flow being processed
 var pEndpoints=[], clientReq = [], clientRes=[], rr=[], tEndpoints=[]
 var preReqIdsP, posReqIdsP, preResIdsP, posResIdsP
 var preReqIdsT, posReqIdsT, preResIdsT, posResIdsT
-var condIdsP, condIdsT, routeRuleIds
+var condReqIdsP, condReqIdsT, condResIdsP, condResIdsT, routeRuleIds
 // GLOBALS /////////////////////////////////////////////////////////////////////
 
 
@@ -145,33 +145,33 @@ function createEdges() {
 
   connect(clientReq, pEndpoints, 'clientReq', 'ProxyEndpoints')
   connect(pEndpoints, preReqIdsP, 'ProxyEndpoints', 'P PreFlows Req')
-  if( condIdsP.length ) {
-    connect(preReqIdsP, condIdsP, 'P PreFlows Req', 'P Conditionals Req')
-    connect(condIdsP, posReqIdsP, 'P Conditionals Req', 'P PostFlows Req')
+  if( condReqIdsP.length ) {
+    connect(preReqIdsP, condReqIdsP, 'P PreFlows Req', 'P Conditionals Req')
+    connect(condReqIdsP, posReqIdsP, 'P Conditionals Req', 'P PostFlows Req')
   } else {
     connect(preReqIdsP, posReqIdsP, 'P PreFlows Req', 'P PostFlows Req')
   }
   connect(posReqIdsP, routeRuleIds, 'P PostFlows Req', 'RouteRules')
   connect(routeRuleIds, preReqIdsT, 'RouteRules', 'T PreFlows Req')
-  if( condIdsT.length ) {
-    connect(preReqIdsT, condIdsT, 'T PreFlows Req', 'T Conditionals Req')
-    connect(condIdsT, posReqIdsT, 'T Conditionals Req', 'T PostFlows Req')
+  if( condReqIdsT.length ) {
+    connect(preReqIdsT, condReqIdsT, 'T PreFlows Req', 'T Conditionals Req')
+    connect(condReqIdsT, posReqIdsT, 'T Conditionals Req', 'T PostFlows Req')
   } else {
     connect(preReqIdsT, posReqIdsT, 'T PreFlows Req', 'T PostFlows Req')
   }
   connect(posReqIdsT, tEndpoints, 'T PostFlows Req', 'TargetEndpoints')
 
   connect(tEndpoints, preResIdsT, 'TargetEndpoints', 'T PreFlows Res')
-  if( condIdsT.length ) {
-    connect(preResIdsT, condIdsT, 'T PreFlows Res', 'T Conditionals Res')
-    connect(condIdsT, posResIdsT, 'T Conditionals Res', 'T PostFlows Res')
+  if( condResIdsT.length ) {
+    connect(preResIdsT, condResIdsT, 'T PreFlows Res', 'T Conditionals Res')
+    connect(condResIdsT, posResIdsT, 'T Conditionals Res', 'T PostFlows Res')
   } else {
     connect(preResIdsT, posResIdsT, 'T PreFlows Res', 'T PostFlows Res')
   }
   connect(posResIdsT, preResIdsP, 'T PostFlows Res', 'P PreFlows Res')
-  if( condIdsP.length ) {
-    connect(preResIdsP, condIdsP, 'P PreFlows Res', 'P Conditionals Res')
-    connect(condIdsP, posResIdsP, 'P Conditionals Res', 'P PostFlows Res')
+  if( condResIdsP.length ) {
+    connect(preResIdsP, condResIdsP, 'P PreFlows Res', 'P Conditionals Res')
+    connect(condResIdsP, posResIdsP, 'P Conditionals Res', 'P PostFlows Res')
   } else {
     connect(preResIdsP, posResIdsP, 'P PreFlows Res', 'P PostFlows Res')
   }
@@ -261,7 +261,7 @@ function processFlow(flow, id/*, defaultFirst, defaultLast*/) {
  * defaultFirst - id of first node, if none is discovered
  * defaultLast - id of last node, if none is discovered
  */
-function processPrePostFlows(ep, pid, pp, rr, defaultFirst, defaultLast) {
+function processPrePostFlows(ep, pid, pp, rr/*, defaultFirst, defaultLast*/) {
   var ids = []
   var flows = eval('ep.'+pp+'Flow')
   flows.forEach(function(flow) {
@@ -273,6 +273,7 @@ function processPrePostFlows(ep, pid, pp, rr, defaultFirst, defaultLast) {
       console.log('ReqRes:', rr, r, typeof r)
       if( typeof r == 'object' ) {
         flowMetadata[id] = processFlow(r, id/*, defaultFirst, defaultLast*/)
+        ids.push(id)
       } else {
         nodes.push({id:id, label:'Empty '+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
         ids.push(id)
@@ -305,7 +306,7 @@ function processPrePostFlows(ep, pid, pp, rr, defaultFirst, defaultLast) {
 /*
  * Cycles through all Conditional Flows
  */
-function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, postReq, preRes, postRes) {
+function processConditionalFlows(p, pid, rr/*, defaultFirst, defaultLast, preReq, postReq, preRes, postRes*/) {
   var ids = []
   p.Flows.forEach(function(flows) {
     if( typeof flows == 'object' ) {
@@ -313,10 +314,10 @@ function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, post
         console.log('  condflow', condflow.$.name, condflow.Condition[0])
 
         // Request
-        condflow['Request'].forEach(function(r) {
-          var id = pid+condflow.$.name+'Request'
-          console.log('    request', r, typeof r, id)
-          if( typeof r == 'object' && flowMetadata[preReq].lastStep && flowMetadata[postReq].firstStep ) {
+        condflow[rr].forEach(function(r) {
+          var id = pid+condflow.$.name+rr
+          console.log('    ', rr, r, typeof r, id)
+          if( typeof r == 'object' /*&& flowMetadata[preReq].lastStep && flowMetadata[postReq].firstStep*/ ) {
             nodes.push({id:id, label:'Conditional '+condflow.$.name+' Request'/*+condflow.Condition[0]*/, group:id, style: 'fill: green'/*, shape:'ellipse'*/})
             ids.push(id)
             //edges.push({from:flowMetadata[preReq].lastStep, to:id, label:condflow.Condition[0]})
@@ -324,19 +325,20 @@ function processConditionalFlows(p, pid, defaultFirst, defaultLast, preReq, post
           }
           console.log(id, flowMetadata[id])
         })
-
+/*
         // Response
         condflow['Response'].forEach(function(r) {
           var id = pid+condflow.$.name+'Response'
           console.log('    response', r, typeof r, id)
           if( typeof r == 'object' && flowMetadata[preRes] && flowMetadata[postRes].firstStep ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Response'/*+condflow.Condition[0]*/, group:id, style: 'fill: yellow'})
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' Response'/*+condflow.Condition[0]* /, group:id, style: 'fill: yellow'})
             ids.push(id)
             //edges.push({from:flowMetadata[preRes].lastStep, to:id, label:condflow.Condition[0]})
-            flowMetadata[id] = processFlow(r, id/*, id, flowMetadata[postRes].firstStep*/)
+            flowMetadata[id] = processFlow(r, id)
           }
           console.log(id, flowMetadata[id])
         })
+      */
       })
     }
   })
@@ -392,11 +394,13 @@ function processProxy(p) {
   posResIdsP = processPrePostFlows(p.ProxyEndpoint, id, 'Post', 'Response', null, id+'response')
 
   // TODO not sure I trust those four parameters to work in all cases
-  condIdsP = processConditionalFlows(p.ProxyEndpoint, id, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0])
+  condReqIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Request'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
+  condResIdsP = processConditionalFlows(p.ProxyEndpoint, id, 'Response'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
   routeRuleIds = processRouteRules(p.ProxyEndpoint, id)
 
   console.log('proxy ids', preReqIdsP, posReqIdsP, preResIdsP, posResIdsP)
-  console.log('conditional ids', condIdsP)
+  console.log('conditional P request ids', condReqIdsP)
+  console.log('conditional P response ids', condResIdsP)
   console.log('routerule ids', routeRuleIds)
 
   // connect flows together into a complete graph of the proxy /////////////////
@@ -451,11 +455,12 @@ function processTarget(p) {
   preResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Pre', 'Response', id, null)
   posResIdsT = processPrePostFlows(p.TargetEndpoint, id, 'Post', 'Response', null, id/*+'response'*/)
 
-  // TODO not sure I trust those four parameters to work in all cases
-  condIdsT = processConditionalFlows(p.TargetEndpoint, id, preReqIdsT[0], posReqIdsT[0], preResIdsT[0], posResIdsT[0])
+  condReqIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Request'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
+  condResIdsT = processConditionalFlows(p.TargetEndpoint, id, 'Response'/*, preReqIdsP[0], posReqIdsP[0], preResIdsP[0], posResIdsP[0]*/)
 
   console.log('target ids', preReqIdsT, posReqIdsT, preResIdsT, posResIdsT)
-  console.log('conditional ids', condIdsT)
+  console.log('conditional T request ids', condReqIdsT)
+  console.log('conditional T response ids', condResIdsT)
 
   // connect flows together into a complete graph of the proxy
   /*
