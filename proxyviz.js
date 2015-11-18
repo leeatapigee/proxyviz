@@ -278,22 +278,24 @@ function processPrePostFlows(ep, pid, pp, rr) {
     console.log('  flow ', flow.$.name, 'identifier', id)
     flowMetadata[id] = {firstStep:id, lastStep:id}
 
-    flow[rr].forEach(function(r) {
-      console.log('ReqRes:', rr, r, typeof r)
-      nodes.push({id:id, label:pt+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
-      ids.push(id)
-      if( typeof r == 'object' ) {
-        flowMetadata[id] = processFlow(r, id)
-        // connect "header" node to front of flow
-        edges.push({from:id, to:flowMetadata[id].firstStep, label:''})
-        flowMetadata[id].firstStep = id
-      } else {
-        flowMetadata[id].firstStep = id
-        flowMetadata[id].lastStep = id
-        flowMetadata[id].steps = 0
-        console.log('flowMetadata:', id, flowMetadata[id])
-      }
-    })
+    if( flow[rr] ) {
+      flow[rr].forEach(function(r) {
+        console.log('ReqRes:', rr, r, typeof r)
+        nodes.push({id:id, label:pt+rr+' '+pp+'Flow', group:pp+'Flow', style: rr === 'Request' ? 'fill: green' : 'fill: yellow'})
+        ids.push(id)
+        if( typeof r == 'object' ) {
+          flowMetadata[id] = processFlow(r, id)
+          // connect "header" node to front of flow
+          edges.push({from:id, to:flowMetadata[id].firstStep, label:''})
+          flowMetadata[id].firstStep = id
+        } else {
+          flowMetadata[id].firstStep = id
+          flowMetadata[id].lastStep = id
+          flowMetadata[id].steps = 0
+          console.log('flowMetadata:', id, flowMetadata[id])
+        }
+      })
+    }
   })
 /*
   if( !ids.length ) {
@@ -319,14 +321,18 @@ function processConditionalFlows(p, pid, rr) {
   p.Flows.forEach(function(flows) {
     if( typeof flows == 'object' ) {
       flows.Flow.forEach(function(condflow) {
-        console.log('  condflow', condflow.$.name, condflow.Condition[0])
+        var condition
+        if( condflow.Condition && condflow.Condition.length ) {
+          condition = condflow.Condition[0]
+        }
+        console.log('  condflow', condflow.$.name, condition)
 
         // Request
         condflow[rr].forEach(function(r) {
           var id = pid+condflow.$.name+rr
           console.log('    ', rr, r, typeof r, id)
           if( typeof r == 'object' ) {
-            nodes.push({id:id, label:'Conditional '+condflow.$.name+' '+rr, condition:condflow.Condition[0], group:id, style: 'fill: green'/*, shape:'ellipse'*/})
+            nodes.push({id:id, label:'Conditional '+condflow.$.name+' '+rr, condition:condition, group:id, style: 'fill: green'/*, shape:'ellipse'*/})
             ids.push(id)
             flowMetadata[id] = processFlow(r, id)
             // connect Conditional "header" node to front of conditional flow
