@@ -123,7 +123,13 @@ function connect(front, back, frontName, backName) {
 
       // prevent broken graphs
       if( _.where(nodes, {id:from}).length && _.where(nodes, {id:to}).length ) {
-        edges.push({from:from, to:to, label:''})
+        var label = ''
+        // check for a condition to display as a label
+        var backNode = _.where(nodes, {id:to})
+        if( backNode && backNode[0].condition ) {
+          label = backNode[0].condition
+        }
+        edges.push({from:from, to:to, label:label})
       } else {
         console.log('>>>>>>>> Node not present trying to connect', from, to)
       }
@@ -179,13 +185,11 @@ function proxyNodesToViz() {
   var out = ''
   console.log('NODES----------------------------------------------------------')
   nodes.forEach(function(n) {
-    //out += '{ id: "'+n.id+'", value: { label: "'+n.label.replace(/\"/g, "'")+'"'+(n.style?', style:"'+n.style+'"':'')+(n.shape?', shape:"'+n.shape+'"':'')+'} },\n'
     out += '"' + n.id + '": {description: "' + n.label.replace(/\"/g, "'") + '"' + (n.style?', style:"'+n.style+'"':'') + (n.shape?', shape:"'+n.shape+'"':'') + '},\n'
 
-    console.log('{ id: "%s", value: { label: "%s"} },', n.id, n.label)
+    console.log('{ id: "%s", value: { label: "%s"} },', n.id, n.label, n)
   })
   return out
-  //return JSON.stringify(nodes)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -193,14 +197,11 @@ function proxyEdgesToViz() {
   var out = ''
   console.log('EDGES----------------------------------------------------------')
   edges.forEach(function(e) {
-    //out += '{ u: "'+e.from+'", v: "'+e.to+'" },\n'
     out += 'g.setEdge("'+e.from+'", "'+e.to+'", { label: "'+(e.label ? e.label.replace(/\"/g, "'") : '')+'" })\n'
-//    out += 'console.log("'+e+'");g.setEdge("'+e.from+'", "'+e.to+'");\n'
 
     console.log('{ u: "%s", v: "%s" },', e.from, e.to)
   })
   return out
-  //return JSON.stringify(edges)
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -335,10 +336,10 @@ function processConditionalFlows(p, pid, rr) {
 function processRouteRules(p, id) {
   var ids = []
   p.RouteRule.forEach(function(rule) {
-    console.log('  routerule', rule.$.name)
 
     // NOTE: assumed [0] on Condition and TargetEndpoint -- possible issue down the road?
     try {
+      console.log('  routerule', rule.$.name, rule.Condition[0])
       ids.push(id+rule.$.name)
       nodes.push({id:id+rule.$.name, label:rule.$.name, group:'RouteRule', style: 'fill: cyan', condition:rule.Condition[0]})
       // TODO evaluate Condition to decide how to connect edges
