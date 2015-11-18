@@ -438,7 +438,7 @@ app.get('/load', function(req, res) {
   res.redirect('/proxyviz.html')
 })
 
-app.get('/proxyviz.js', function(req, res) {
+app.get('/proxygraph.js', function(req, res) {
   var handlebars = require('handlebars')
   var fs = require('fs')
   var script
